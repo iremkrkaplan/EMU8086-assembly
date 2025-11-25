@@ -1,0 +1,382 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+CORRECT_WORD DW 0994H
+ERROR_POS DW 0
+CORRUPTED_WORD DW 0
+C1_VAL DB 0
+C2_VAL DB 0
+C4_VAL DB 0
+C8_VAL DB 0
+SYNDROME DB 0
+MSG_NO_ERROR DB 'No error detected.$'
+MSG_CORRECTED DB 'Corrected word: $'
+MSG_DETECTED_POS DB 'Detected position: $'
+MSG_GENERATED_POS DB 'Generated position: $'
+NEWLINE DB 0DH, 0AH, '$'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+    
+    CALL CORRUPT
+    
+    MOV AX, CORRUPTED_WORD
+    CALL CHECK_AND_CORRECT
+    
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+
+CORRUPT PROC
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    
+    MOV AH, 2CH
+    INT 21H
+    
+    MOV AL, CL
+    MOV AH, 0
+    MOV BL, 12
+    DIV BL
+    
+    MOV AL, AH
+    MOV AH, 0
+    ADD AX, 1
+    MOV ERROR_POS, AX
+    
+    MOV AX, CORRECT_WORD
+    MOV BX, ERROR_POS
+    DEC BX
+    
+    MOV CL, BL
+    MOV BX, 1
+    SHL BX, CL
+    
+    XOR AX, BX
+    MOV CORRUPTED_WORD, AX
+    
+    POP DX
+    POP CX
+    POP BX
+    RET
+CORRUPT ENDP
+
+CHECK_AND_CORRECT PROC
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    PUSH SI
+    
+    MOV SI, AX
+    
+    MOV C1_VAL, 0
+    MOV C2_VAL, 0
+    MOV C4_VAL, 0
+    MOV C8_VAL, 0
+    
+    MOV BX, AX
+    AND BX, 0001H
+    CMP BX, 0
+    JE SKIP_C1_1
+    XOR C1_VAL, 1
+SKIP_C1_1:
+    
+    MOV BX, AX
+    AND BX, 0004H
+    CMP BX, 0
+    JE SKIP_C1_3
+    XOR C1_VAL, 1
+SKIP_C1_3:
+    
+    MOV BX, AX
+    AND BX, 0010H
+    CMP BX, 0
+    JE SKIP_C1_5
+    XOR C1_VAL, 1
+SKIP_C1_5:
+    
+    MOV BX, AX
+    AND BX, 0040H
+    CMP BX, 0
+    JE SKIP_C1_7
+    XOR C1_VAL, 1
+SKIP_C1_7:
+    
+    MOV BX, AX
+    AND BX, 0100H
+    CMP BX, 0
+    JE SKIP_C1_9
+    XOR C1_VAL, 1
+SKIP_C1_9:
+    
+    MOV BX, AX
+    AND BX, 0400H
+    CMP BX, 0
+    JE SKIP_C1_11
+    XOR C1_VAL, 1
+SKIP_C1_11:
+    
+    MOV BX, AX
+    AND BX, 0002H
+    CMP BX, 0
+    JE SKIP_C2_2
+    XOR C2_VAL, 1
+SKIP_C2_2:
+    
+    MOV BX, AX
+    AND BX, 0004H
+    CMP BX, 0
+    JE SKIP_C2_3
+    XOR C2_VAL, 1
+SKIP_C2_3:
+    
+    MOV BX, AX
+    AND BX, 0020H
+    CMP BX, 0
+    JE SKIP_C2_6
+    XOR C2_VAL, 1
+SKIP_C2_6:
+    
+    MOV BX, AX
+    AND BX, 0040H
+    CMP BX, 0
+    JE SKIP_C2_7
+    XOR C2_VAL, 1
+SKIP_C2_7:
+    
+    MOV BX, AX
+    AND BX, 0200H
+    CMP BX, 0
+    JE SKIP_C2_10
+    XOR C2_VAL, 1
+SKIP_C2_10:
+    
+    MOV BX, AX
+    AND BX, 0400H
+    CMP BX, 0
+    JE SKIP_C2_11
+    XOR C2_VAL, 1
+SKIP_C2_11:
+    
+    MOV BX, AX
+    AND BX, 0008H
+    CMP BX, 0
+    JE SKIP_C4_4
+    XOR C4_VAL, 1
+SKIP_C4_4:
+    
+    MOV BX, AX
+    AND BX, 0010H
+    CMP BX, 0
+    JE SKIP_C4_5
+    XOR C4_VAL, 1
+SKIP_C4_5:
+    
+    MOV BX, AX
+    AND BX, 0020H
+    CMP BX, 0
+    JE SKIP_C4_6
+    XOR C4_VAL, 1
+SKIP_C4_6:
+    
+    MOV BX, AX
+    AND BX, 0040H
+    CMP BX, 0
+    JE SKIP_C4_7
+    XOR C4_VAL, 1
+SKIP_C4_7:
+    
+    MOV BX, AX
+    AND BX, 0800H
+    CMP BX, 0
+    JE SKIP_C4_12
+    XOR C4_VAL, 1
+SKIP_C4_12:
+    
+    MOV BX, AX
+    AND BX, 0080H
+    CMP BX, 0
+    JE SKIP_C8_8
+    XOR C8_VAL, 1
+SKIP_C8_8:
+    
+    MOV BX, AX
+    AND BX, 0100H
+    CMP BX, 0
+    JE SKIP_C8_9
+    XOR C8_VAL, 1
+SKIP_C8_9:
+    
+    MOV BX, AX
+    AND BX, 0200H
+    CMP BX, 0
+    JE SKIP_C8_10
+    XOR C8_VAL, 1
+SKIP_C8_10:
+    
+    MOV BX, AX
+    AND BX, 0400H
+    CMP BX, 0
+    JE SKIP_C8_11
+    XOR C8_VAL, 1
+SKIP_C8_11:
+    
+    MOV BX, AX
+    AND BX, 0800H
+    CMP BX, 0
+    JE SKIP_C8_12
+    XOR C8_VAL, 1
+SKIP_C8_12:
+    
+    MOV BL, C1_VAL
+    MOV BH, 0
+    MOV AL, C2_VAL
+    MOV AH, 0
+    SHL AX, 1
+    ADD BX, AX
+    MOV AL, C4_VAL
+    MOV AH, 0
+    SHL AX, 2
+    ADD BX, AX
+    MOV AL, C8_VAL
+    MOV AH, 0
+    SHL AX, 3
+    ADD BX, AX
+    MOV SYNDROME, BL
+    
+    CMP BL, 0
+    JNE HAS_ERROR
+    
+    LEA DX, MSG_NO_ERROR
+    MOV AH, 09H
+    INT 21H
+    LEA DX, NEWLINE
+    MOV AH, 09H
+    INT 21H
+    JMP END_CHECK
+    
+HAS_ERROR:
+    MOV AX, SI
+    MOV BL, SYNDROME
+    MOV BH, 0
+    DEC BX
+    MOV CL, BL
+    MOV BX, 1
+    SHL BX, CL
+    XOR AX, BX
+    
+    LEA DX, MSG_CORRECTED
+    MOV AH, 09H
+    INT 21H
+    
+    MOV BX, AX
+    MOV CL, 12
+    MOV CH, 0
+    
+PRINT_HEX:
+    MOV DL, BH
+    SHR DL, 4
+    CMP DL, 9
+    JLE DIGIT1
+    ADD DL, 7
+DIGIT1:
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    MOV DL, BH
+    AND DL, 0FH
+    CMP DL, 9
+    JLE DIGIT2
+    ADD DL, 7
+DIGIT2:
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    MOV DL, BL
+    SHR DL, 4
+    CMP DL, 9
+    JLE DIGIT3
+    ADD DL, 7
+DIGIT3:
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    MOV DL, BL
+    AND DL, 0FH
+    CMP DL, 9
+    JLE DIGIT4
+    ADD DL, 7
+DIGIT4:
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    LEA DX, NEWLINE
+    MOV AH, 09H
+    INT 21H
+    
+    LEA DX, MSG_DETECTED_POS
+    MOV AH, 09H
+    INT 21H
+    
+    MOV BL, SYNDROME
+    MOV BH, 0
+    MOV AX, BX
+    MOV BL, 10
+    DIV BL
+    CMP AL, 0
+    JE SKIP_TENS1
+    MOV DL, AL
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+SKIP_TENS1:
+    MOV DL, AH
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    LEA DX, NEWLINE
+    MOV AH, 09H
+    INT 21H
+    
+    LEA DX, MSG_GENERATED_POS
+    MOV AH, 09H
+    INT 21H
+    
+    MOV AX, ERROR_POS
+    MOV BL, 10
+    DIV BL
+    CMP AL, 0
+    JE SKIP_TENS2
+    MOV DL, AL
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+SKIP_TENS2:
+    MOV DL, AH
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+    
+    LEA DX, NEWLINE
+    MOV AH, 09H
+    INT 21H
+
+END_CHECK:
+    POP SI
+    POP DX
+    POP CX
+    POP BX
+    RET
+CHECK_AND_CORRECT ENDP
+
+END MAIN
+
